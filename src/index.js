@@ -45,7 +45,8 @@ app.post("/sign-up", async (req, res) => {
   const user = req.body;
 
   try {
-    const userExist = await userCollection.findOne({ email });
+    const userExist = await userCollection.findOne({ email: user.email });
+    console.log(userExist)
 
     if (userExist) {
       return res.status(409).send({ message: "Esse email já está cadastrado" });
@@ -61,7 +62,8 @@ app.post("/sign-up", async (req, res) => {
     const passwordHash = bcrypt.hashSync(user.password, 12);
     const confirmPasswordHash = bcrypt.hashSync(user.confirm, 12);
     await userCollection.insertOne({
-      ...user,
+      name:user.name,
+      email: user.email,
       password: passwordHash,
       confirm: confirmPasswordHash,
     });
@@ -122,6 +124,14 @@ app.get("/sign-up", async (req, res) => {
 app.post("/enter", async (req, res) => {
   const value = req.body;
 
+  const { authorization } = req.headers; // Bearer Token
+
+  const token = authorization?.replace("Bearer ", "");
+
+  if (!token) {
+    return res.sendStatus(401);
+  }
+
   try {
     const { error } = valueSchema.validate(value, { abortEarly: false });
 
@@ -134,9 +144,10 @@ app.post("/enter", async (req, res) => {
       value: value.value,
       description: value.description,
       type: value.type,
+      time: time,
     });
 
-    res.sendStatus(201)
+    res.sendStatus(201);
   } catch (err) {
     console.log(err);
     res.sendStatus(500);
@@ -144,6 +155,14 @@ app.post("/enter", async (req, res) => {
 });
 
 app.get("/enter", async (req, res) => {
+  const { authorization } = req.headers; // Bearer Token
+
+  const token = authorization?.replace("Bearer ", "");
+
+  if (!token) {
+    return res.sendStatus(401);
+  }
+
   try {
     const getValues = await valueCollection.find().toArray();
     res.send(getValues);
@@ -156,6 +175,14 @@ app.get("/enter", async (req, res) => {
 app.post("/out", async (req, res) => {
   const value = req.body;
 
+  const { authorization } = req.headers; // Bearer Token
+
+  const token = authorization?.replace("Bearer ", "");
+
+  if (!token) {
+    return res.sendStatus(401);
+  }
+
   try {
     const { error } = valueSchema.validate(value, { abortEarly: false });
 
@@ -168,6 +195,7 @@ app.post("/out", async (req, res) => {
       value: value.value,
       description: value.description,
       type: value.type,
+      time: time,
     });
     res.sendStatus(201);
   } catch (err) {
@@ -177,6 +205,14 @@ app.post("/out", async (req, res) => {
 });
 
 app.get("/out", async (req, res) => {
+  const { authorization } = req.headers; // Bearer Token
+
+  const token = authorization?.replace("Bearer ", "");
+
+  if (!token) {
+    return res.sendStatus(401);
+  }
+
   try {
     const getValues = await valueCollection.find().toArray();
     res.send(getValues);
