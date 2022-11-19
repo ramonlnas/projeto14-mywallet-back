@@ -36,7 +36,7 @@ try {
 }
 
 const userCollection = db.collection("users");
-const userSession = db.collection("sessions");
+const sessionCollection = db.collection("sessions");
 const valueCollection = db.collection("value");
 
 const time = dayjs().format("D/M");
@@ -46,7 +46,7 @@ app.post("/sign-up", async (req, res) => {
 
   try {
     const userExist = await userCollection.findOne({ email: user.email });
-    console.log(userExist)
+    console.log(userExist);
 
     if (userExist) {
       return res.status(409).send({ message: "Esse email já está cadastrado" });
@@ -62,7 +62,7 @@ app.post("/sign-up", async (req, res) => {
     const passwordHash = bcrypt.hashSync(user.password, 12);
     const confirmPasswordHash = bcrypt.hashSync(user.confirm, 12);
     await userCollection.insertOne({
-      name:user.name,
+      name: user.name,
       email: user.email,
       password: passwordHash,
       confirm: confirmPasswordHash,
@@ -91,7 +91,7 @@ app.post("/", async (req, res) => {
       return res.send(401).status({ message: "E-mail ou senha incorreto" });
     }
 
-    // const sessionUser = await userSession.findOne({ userId: userExist._id });
+    // const sessionUser = await sessionCollection.findOne({ userId: userExist._id });
 
     // if (sessionUser) {
     //   return res
@@ -99,12 +99,20 @@ app.post("/", async (req, res) => {
     //     .send({ message: "Você já está logado, saia para logar novamente" });
     // }
 
-    await userSession.insertOne({
+    await sessionCollection.insertOne({
       token,
       userId: userExist._id,
     });
 
-    res.send({ token, name: userExist.name });
+    const user = await sessionCollection.findOne({ token });
+    const id = user.userId;
+
+    // console.log(user, "id")
+
+    // res.locals.user = users;
+    // console.log(res.locals.user, "TESTANDO")
+
+    res.send({ token, name: userExist.name, id });
   } catch (err) {
     console.log(err);
     res.sendStatus(500);
@@ -123,8 +131,7 @@ app.get("/sign-up", async (req, res) => {
 
 app.post("/enter", async (req, res) => {
   const value = req.body;
-
-  const { authorization } = req.headers; // Bearer Token
+  const { authorization, id } = req.headers;
 
   const token = authorization?.replace("Bearer ", "");
 
@@ -145,6 +152,7 @@ app.post("/enter", async (req, res) => {
       description: value.description,
       type: value.type,
       time: time,
+      user: id,
     });
 
     res.sendStatus(201);
@@ -155,7 +163,8 @@ app.post("/enter", async (req, res) => {
 });
 
 app.get("/enter", async (req, res) => {
-  const { authorization } = req.headers; // Bearer Token
+  const { authorization, id } = req.headers; 
+  console.log(id, "CHECANDO ID")
 
   const token = authorization?.replace("Bearer ", "");
 
@@ -164,8 +173,13 @@ app.get("/enter", async (req, res) => {
   }
 
   try {
-    const getValues = await valueCollection.find().toArray();
-    res.send(getValues);
+    const isUser = await valueCollection.find({ user: id }).toArray();
+    console.log(isUser);
+    if (!isUser) {
+      return res.sendStatus(401);
+    }
+
+    res.send({ isUser });
   } catch (err) {
     console.log(err);
     res.sendStatus(500);
@@ -174,8 +188,7 @@ app.get("/enter", async (req, res) => {
 
 app.post("/out", async (req, res) => {
   const value = req.body;
-
-  const { authorization } = req.headers; // Bearer Token
+  const { authorization, id } = req.headers;
 
   const token = authorization?.replace("Bearer ", "");
 
@@ -196,16 +209,18 @@ app.post("/out", async (req, res) => {
       description: value.description,
       type: value.type,
       time: time,
+      user: id,
     });
+
     res.sendStatus(201);
   } catch (err) {
     console.log(err);
     res.sendStatus(500);
-  }
-});
+  }});
 
 app.get("/out", async (req, res) => {
-  const { authorization } = req.headers; // Bearer Token
+  const { authorization, id } = req.headers; 
+  console.log(id, "CHECANDO ID")
 
   const token = authorization?.replace("Bearer ", "");
 
@@ -214,11 +229,26 @@ app.get("/out", async (req, res) => {
   }
 
   try {
-    const getValues = await valueCollection.find().toArray();
-    res.send(getValues);
+    const isUser = await valueCollection.find({ user: id }).toArray();
+    console.log(isUser);
+    if (!isUser) {
+      return res.sendStatus(401);
+    }
+
+    res.send({ isUser });
   } catch (err) {
     console.log(err);
     res.sendStatus(500);
+  }
+
+});
+
+app.get("/users", async (req, res) => {
+  try {
+    const users = await sessionCollection.find().toArray();
+    res.send(users);
+  } catch (err) {
+    console.log(err);
   }
 });
 
