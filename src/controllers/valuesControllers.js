@@ -40,6 +40,8 @@ export async function getEnter(req, res) {
     if (!isUser) {
       return res.sendStatus(401);
     }
+    const typeEnter = [];
+    const typeOut = [];
 
     res.send({ isUser });
   } catch (err) {
@@ -51,7 +53,6 @@ export async function getEnter(req, res) {
 export async function postOut(req, res) {
   const value = req.body;
   const { id } = req.headers;
-
 
   try {
     const { error } = valueSchema.validate(value, { abortEarly: false });

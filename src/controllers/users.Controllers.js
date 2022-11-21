@@ -1,7 +1,7 @@
 import { sessionCollection, userCollection } from "../database/db.js";
 import bcrypt from "bcrypt";
 import { v4 as uuidV4 } from "uuid";
-
+import userSchema from "../models/userSchema.js";
 
 
 export async function postSignUpParticipants(req, res) {
@@ -9,11 +9,11 @@ export async function postSignUpParticipants(req, res) {
 
   try {
     const userExist = await userCollection.findOne({ email: user.email });
-    console.log(userExist);
 
     if (userExist) {
       return res.status(409).send({ message: "Esse email já está cadastrado" });
     }
+    console.log(user, "teste");
 
     const { error } = userSchema.validate(user, { abortEarly: false });
 
@@ -30,8 +30,9 @@ export async function postSignUpParticipants(req, res) {
       password: passwordHash,
       confirm: confirmPasswordHash,
     });
+    res.sendStatus(201)
   } catch (err) {
-    console.log(err);
+    console.log(err.data);
     res.sendStatus(500);
   }
 }
